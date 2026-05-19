@@ -16,3 +16,8 @@ STEP/*/*.sldprt
 Celestial Altium Library*.DbLib
 *_loc
 altiumlibrary.com.DbLib
+
+# build outputs
+.venv/
+*.tar.gz
+csv/

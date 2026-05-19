@@ -1,0 +1,74 @@
+name: Release latest
+
+on:
+  push:
+    branches:
+      - master
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-latest
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Install Microsoft ODBC driver
+        run: |
+          set -euxo pipefail
+          curl -fsSL https://packages.microsoft.com/keys/microsoft.asc \
+            | sudo gpg --dearmor -o /usr/share/keyrings/microsoft.gpg
+          ubuntu_rel=$(lsb_release -rs)
+          echo "deb [arch=amd64,arm64,armhf signed-by=/usr/share/keyrings/microsoft.gpg] https://packages.microsoft.com/ubuntu/${ubuntu_rel}/prod $(lsb_release -cs) main" \
+            | sudo tee /etc/apt/sources.list.d/mssql-release.list
+          sudo apt-get update
+          sudo ACCEPT_EULA=Y apt-get install -y msodbcsql18 unixodbc-dev
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: scripts/requirements.txt
+
+      - name: Install Python deps
+        run: pip install -r scripts/requirements.txt
+
+      - name: Dump MSSQL library to CSVs
+        env:
+          MSSQL_HOST:     ${{ secrets.MSSQL_HOST }}
+          MSSQL_PORT:     ${{ secrets.MSSQL_PORT }}
+          MSSQL_USER:     ${{ secrets.MSSQL_USER }}
+          MSSQL_PASSWORD: ${{ secrets.MSSQL_PASSWORD }}
+          MSSQL_DATABASE: ${{ secrets.MSSQL_DATABASE }}
+          CSV_OUT_DIR:    csv
+        run: python scripts/db_to_csv.py
+
+      - name: Pack CSV tarball
+        run: tar -czf csv.tar.gz csv/
+
+      - name: Pack repo tarball (STEP/PcbLib/SchLib/README only, ASCII paths)
+        run: bash scripts/build_repo_tarball.sh
+
+      - name: Replace 'latest' release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euxo pipefail
+          # Remove any prior release+tag named 'latest' so we always start clean.
+          gh release delete latest --yes --cleanup-tag || true
+          gh release create latest \
+            --target "${GITHUB_SHA}" \
+            --title "Latest build" \
+            --notes "Automated build from ${GITHUB_SHA} on $(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            repo.tar.gz csv.tar.gz
