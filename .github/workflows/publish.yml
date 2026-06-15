@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   publish:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, dev1]
     steps:
       # Pull only the part libraries from upstream (skip STEP/BOM/images — the
       # .PcbLib carry their own embedded 3D, which the processor extracts).
