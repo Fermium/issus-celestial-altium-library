@@ -1,0 +1,34 @@
+name: Publish to Sideband
+
+# Weekly (Thu) — pull the latest .SchLib/.PcbLib from the upstream Mark Harris
+# library and incrementally sync them to the Sideband catalog. Also on demand.
+on:
+  schedule:
+    - cron: "0 3 * * 4"   # Thursdays 03:00 UTC (kicad runs Tue — staggered)
+  workflow_dispatch:
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      # Pull only the part libraries from upstream (skip STEP/BOM/images — the
+      # .PcbLib carry their own embedded 3D, which the processor extracts).
+      - name: Fetch upstream issus/altium-library (symbols + footprints)
+        run: |
+          git clone --depth 1 --filter=blob:none --sparse https://github.com/issus/altium-library /tmp/upstream
+          git -C /tmp/upstream sparse-checkout set symbols footprints
+          echo "symbols: $(find /tmp/upstream/symbols -iname '*.schlib' | wc -l), footprints: $(find /tmp/upstream/footprints -iname '*.pcblib' | wc -l)"
+
+      - uses: Fermium/sideband-library-publish@v1
+        with:
+          slug: issus-altium-library
+          org: issus
+          repo: altium-library
+          source-dir: /tmp/upstream
+          catalog-url: ${{ secrets.SIDEBAND_CATALOG_URL }}
+          token: ${{ secrets.SIDEBAND_PUBLISH_TOKEN }}
+          max-per-run: "0"
