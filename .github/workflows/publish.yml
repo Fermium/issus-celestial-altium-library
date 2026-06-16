@@ -6,6 +6,11 @@ on:
   schedule:
     - cron: "0 3 * * 4"   # Thursdays 03:00 UTC (kicad runs Tue — staggered)
   workflow_dispatch:
+    inputs:
+      reingest_existing:
+        description: "Re-ingest EVERY part incl. ids already in the catalog (one-time backfill to reapply changed server-side rendering, e.g. multi-part symbols)."
+        type: boolean
+        default: false
 
 concurrency:
   group: publish
@@ -32,3 +37,4 @@ jobs:
           catalog-url: ${{ secrets.SIDEBAND_CATALOG_URL }}
           token: ${{ secrets.SIDEBAND_PUBLISH_TOKEN }}
           max-per-run: "0"
+          reingest-existing: ${{ inputs.reingest_existing || 'false' }}
