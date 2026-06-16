@@ -24,6 +24,7 @@ jobs:
       # .PcbLib carry their own embedded 3D, which the processor extracts).
       - name: Fetch upstream issus/altium-library (symbols + footprints)
         run: |
+          rm -rf /tmp/upstream   # self-hosted runner persists /tmp; clone needs a clean dir
           git clone --depth 1 --filter=blob:none --sparse https://github.com/issus/altium-library /tmp/upstream
           git -C /tmp/upstream sparse-checkout set symbols footprints
           echo "symbols: $(find /tmp/upstream/symbols -iname '*.schlib' | wc -l), footprints: $(find /tmp/upstream/footprints -iname '*.pcblib' | wc -l)"
