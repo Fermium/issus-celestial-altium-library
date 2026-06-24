@@ -39,3 +39,5 @@ jobs:
           token: ${{ secrets.SIDEBAND_PUBLISH_TOKEN }}
           max-per-run: "0"
           reingest-existing: ${{ inputs.reingest_existing || 'false' }}
+          # Per-part download override → exact file in the Fermium fork (paths mirror issus/altium-library).
+          download-url-base: https://github.com/Fermium/issus-celestial-altium-library/blob/master
