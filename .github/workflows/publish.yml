@@ -39,5 +39,5 @@ jobs:
           token: ${{ secrets.SIDEBAND_PUBLISH_TOKEN }}
           max-per-run: "0"
           reingest-existing: ${{ inputs.reingest_existing || 'false' }}
-          # Per-part download override → full URL (the upstream Fermium repo).
-          download-url: https://github.com/Fermium/issus-celestial-altium-library
+          # Per-part download override → full URL of the UPSTREAM issus repo (not our fork).
+          download-url: https://github.com/issus/altium-library
